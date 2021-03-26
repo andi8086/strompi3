@@ -51,7 +51,7 @@
  StromPi v3 - by Joy-IT
  OpenSource-Firmware published under MIT-License
 
- /************************************************************************************************************************************************************
+ ***********************************************************************************************************************************************************
 
  This following pieces of Code defines the Firmware of the StromPi3 Raspberry Pi expansion.
  Its main functions are included into the integrated OpenSource FreeRTOS
@@ -129,7 +129,7 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-PAGEError = 0;
+uint32_t PAGEError = 0;
 uint8_t initstart = 0; /*** only needed in factory production  ***/
 
 /* USER CODE END PV */
@@ -833,7 +833,7 @@ void reconfigureWatchdog()
 
 	if (HAL_ADC_Stop_DMA(&hadc) != HAL_OK)
 	{
-		return 0;
+		return;
 	}
 
 	if (modus == 1 || modus == 3)
@@ -849,7 +849,7 @@ void reconfigureWatchdog()
 
 	if (HAL_ADC_Start_DMA(&hadc, (uint32_t*) rawValue, 5) != HAL_OK)
 	{
-		return 0;
+		return;
 	}
 }
 
@@ -1447,7 +1447,7 @@ void initialCheck(void)
  *
  * The last part os for reading out the ADC and storing the values into variables for processing.
 
-
+*/
 
  /* USER CODE END 4 */
 
@@ -1483,7 +1483,7 @@ void StartDefaultTask(void const * argument)
 
 		if (HAL_ADC_Start_DMA(&hadc, (uint32_t*) rawValue, 5) != HAL_OK)
 		{
-			return 0;
+			return;
 		}
 
 		MX_USART1_UART_Init();
@@ -1732,7 +1732,7 @@ void StartDefaultTask(void const * argument)
 		 * and the warning message for the Raspberry Pi Shutdown
 		 * is sent out through the serial interface  ***/
 
-		if (shutdown_enable == 1 && shutdown_flag == 1 || alarm_shutdown_enable == 1)
+		if ((shutdown_enable == 1 && shutdown_flag == 1) || alarm_shutdown_enable == 1)
 		{
 			shutdown_time_counter = shutdown_time;
 			ShutdownRPi();

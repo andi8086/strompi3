@@ -60,21 +60,21 @@ void vUARTCommandConsoleStart(void);
 
 /*** Here are the commands registered which can be used in the serial console ***/
 
-static portBASE_TYPE prvTimeOutput(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvADCOutput(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvMode(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvSetClock(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvStartStromPiConsole(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvStartStromPiConsoleQuick(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvQuitStromPiConsole(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvSetDate(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvSetConfig(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvShowStatus(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvShowAlarm(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvPowerOff(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvTimeRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvDateRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
-static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString);
+static portBASE_TYPE prvTimeOutput(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvMode(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvSetClock(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvStartStromPiConsole(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvStartStromPiConsoleQuick(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvQuitStromPiConsole(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvShowStatus(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvPowerOff(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvTimeRPi(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvDateRPi(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static portBASE_TYPE prvStatusRPi(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
 /*** Here you can find  how FreeRTOS needs the command registered
  *
@@ -88,56 +88,56 @@ static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
  * ***/
 
 static const CLI_Command_Definition_t xSetClock =
-{ (const int8_t * const ) "set-clock", (const int8_t * const ) "set-clock <hour> <minutes> <seconds>:\r\n Set the Clock of the StromPi RTC \r\n\r\n", prvSetClock, 3 };
+{ (const char *) "set-clock", (const char*) "set-clock <hour> <minutes> <seconds>:\r\n Set the Clock of the StromPi RTC \r\n\r\n", prvSetClock, 3 };
 
 static const CLI_Command_Definition_t xSetDate =
-{ (const int8_t * const ) "set-date", (const int8_t * const ) "set-date <date> <month> <year> <weekday>:\r\n Set the Date of the StromPi RTC-Clock \r\n\r\n", prvSetDate, 4 };
+{ (const char *) "set-date", (const char *) "set-date <date> <month> <year> <weekday>:\r\n Set the Date of the StromPi RTC-Clock \r\n\r\n", prvSetDate, 4 };
 
 static const CLI_Command_Definition_t xSetConfig =
-{ (const int8_t * const ) "set-config", (const int8_t * const ) "", prvSetConfig, 2 };
+{ (const char *) "set-config", (const char *) "", prvSetConfig, 2 };
 
 static const CLI_Command_Definition_t xStartStromPiConsole =
-{ (const int8_t * const ) "startstrompiconsole", (const int8_t * const ) "", prvStartStromPiConsole, 0
+{ (const char *) "startstrompiconsole", (const char *) "", prvStartStromPiConsole, 0
 //startstrompiconsole:\r\n Terminal-Console wird auf dem StromPi gestartet\r\n\r\n
 		};
 
 static const CLI_Command_Definition_t xStartStromPiConsoleQuick =
-{ (const int8_t * const ) "sspc", (const int8_t * const ) "", prvStartStromPiConsoleQuick, 0
+{ (const char *) "sspc", (const char *) "", prvStartStromPiConsoleQuick, 0
 //startstrompiconsole:\r\n Terminal-Console wird auf dem StromPi gestartet\r\n\r\n
 		};
 
 static const CLI_Command_Definition_t xQuitStromPiConsole =
-{ (const int8_t * const ) "quit", (const int8_t * const ) "quit:\r\n Closes the StromPi-Console\r\n\r\n", prvQuitStromPiConsole, 0
+{ (const char *) "quit", (const char *) "quit:\r\n Closes the StromPi-Console\r\n\r\n", prvQuitStromPiConsole, 0
 //startstrompiconsole:\r\n Terminal-Console wird auf dem StromPi gestartet\r\n\r\n
 		};
 
 static const CLI_Command_Definition_t xMode =
-{ (const int8_t * const ) "strompi-mode",
-		(const int8_t * const ) "strompi-mode <mode-number>:\r\n Configures the mode of the StromPi 3:\r\n  Mode 1: mUSB -> Wide\r\n  Mode 2: Wide -> mUSB\r\n  Mode 3: mUSB -> Battery\r\n  Mode 4: Wide -> Battery\r\n  Mode 5: mUSB -> Wide -> Battery\r\n  Mode 6: Wide -> mUSB -> Battery\r\n\r\n", prvMode, 1 };
+{ (const char *) "strompi-mode",
+		(const char *) "strompi-mode <mode-number>:\r\n Configures the mode of the StromPi 3:\r\n  Mode 1: mUSB -> Wide\r\n  Mode 2: Wide -> mUSB\r\n  Mode 3: mUSB -> Battery\r\n  Mode 4: Wide -> Battery\r\n  Mode 5: mUSB -> Wide -> Battery\r\n  Mode 6: Wide -> mUSB -> Battery\r\n\r\n", prvMode, 1 };
 
 static const CLI_Command_Definition_t xADCOutput =
-{ (const int8_t * const ) "adc-output", (const int8_t * const ) "adc-output:\r\n Outputs the measured Voltages\r\n\r\n", prvADCOutput, 0 };
+{ (const char *) "adc-output", (const char *) "adc-output:\r\n Outputs the measured Voltages\r\n\r\n", prvADCOutput, 0 };
 
 static const CLI_Command_Definition_t xTimeOutput =
-{ (const int8_t * const ) "time-output", (const int8_t * const ) "time-output:\r\n Displays the actual time of the StromPi RTC-Clock\r\n\r\n", prvTimeOutput, 0 };
+{ (const char *) "time-output", (const char *) "time-output:\r\n Displays the actual time of the StromPi RTC-Clock\r\n\r\n", prvTimeOutput, 0 };
 
 static const CLI_Command_Definition_t xShowStatus =
-{ (const int8_t * const ) "show-status", (const int8_t * const ) "show-status:\r\n Outputs the actual Global-Configuration\r\n\r\n", prvShowStatus, 0 };
+{ (const char *) "show-status", (const char *) "show-status:\r\n Outputs the actual Global-Configuration\r\n\r\n", prvShowStatus, 0 };
 
 static const CLI_Command_Definition_t xShowAlarm =
-{ (const int8_t * const ) "show-alarm", (const int8_t * const ) "show-alarm:\r\n Outputs the actual Alarm-Configuration\r\n\r\n", prvShowAlarm, 0 };
+{ (const char *) "show-alarm", (const char *) "show-alarm:\r\n Outputs the actual Alarm-Configuration\r\n\r\n", prvShowAlarm, 0 };
 
 static const CLI_Command_Definition_t xPowerOff =
-{ (const int8_t * const ) "poweroff", (const int8_t * const ) "poweroff:\r\n Shutdown the Raspberry Pi with the StromPi \r\n\r\n", prvPowerOff, 0 };
+{ (const char *) "poweroff", (const char *) "poweroff:\r\n Shutdown the Raspberry Pi with the StromPi \r\n\r\n", prvPowerOff, 0 };
 
 static const CLI_Command_Definition_t xTimeRPi =
-{ (const int8_t * const ) "time-rpi", (const int8_t * const ) "", prvTimeRPi, 0 };
+{ (const char *) "time-rpi", (const char *) "", prvTimeRPi, 0 };
 
 static const CLI_Command_Definition_t xDateRPi =
-{ (const int8_t * const ) "date-rpi", (const int8_t * const ) "", prvDateRPi, 0 };
+{ (const char *) "date-rpi", (const char *) "", prvDateRPi, 0 };
 
 static const CLI_Command_Definition_t xStatusRPi =
-{ (const int8_t * const ) "status-rpi", (const int8_t * const ) "", prvStatusRPi, 0 };
+{ (const char *) "status-rpi", (const char *) "", prvStatusRPi, 0 };
 
 int ascii2int(const char* s);
 

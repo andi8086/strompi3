@@ -98,7 +98,7 @@ char firmwareVersion[9] = "v1.72c";
 /*
  * The task that implements the command console processing.
  */
-static void prvUARTCommandConsoleTask(void const * pvParameters);
+static void prvUARTCommandConsoleTask(void *pvParameters);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 
 /*-----------------------------------------------------------*/
@@ -118,7 +118,7 @@ void vUARTCommandConsoleStart(void)
 	/*** Creates the FreeRTOS Task for the Serial Console ***/
 
 	xTaskCreate(prvUARTCommandConsoleTask, /* The task that implements the command console. */
-	(const int8_t * const ) "UARTCmd", /* Text name assigned to the task.  This is just to assist debugging.  The kernel does not use this name itself. */
+	"UARTCmd", /* Text name assigned to the task.  This is just to assist debugging.  The kernel does not use this name itself. */
 	configUART_COMMAND_CONSOLE_STACK_SIZE, /* The size of the stack allocated to the task. */
 	NULL, /* The parameter is not used, so NULL is passed. */
 	configUART_COMMAND_CONSOLE_TASK_PRIORITY,/* The priority allocated to the task. */
@@ -164,10 +164,11 @@ void vUARTCommandConsoleStart(void)
  * with the StromPi3 through scripts, where an input into the console
  * isn't needed ***/
 
-static void prvUARTCommandConsoleTask(void const * pvParameters)
+static void prvUARTCommandConsoleTask(void *pvParameters)
 {
-	int8_t cRxedChar, cInputIndex = 0, *pcOutputString;
-	static int8_t cInputString[cmdMAX_INPUT_SIZE], cLastInputString[cmdMAX_INPUT_SIZE];
+	uint8_t cRxedChar, cInputIndex = 0;
+	char *pcOutputString;
+	static char cInputString[cmdMAX_INPUT_SIZE], cLastInputString[cmdMAX_INPUT_SIZE];
 	portBASE_TYPE xReturned;
 
 	(void) pvParameters;
@@ -178,15 +179,13 @@ static void prvUARTCommandConsoleTask(void const * pvParameters)
 	pcOutputString = FreeRTOS_CLIGetOutputBuffer();
 
 	/* Send the welcome message. */
-	volatile UBaseType_t uxHighWaterMark;
-
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL);
+	//volatile UBaseType_t uxHighWaterMark;
 
 	for (;;)
 	{
 		/* Only interested in reading one character at a time. */
 
-		uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL);
+		//uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL);
 
 		/*** Process the Serial Interface Interrupt and copy a received Character
 		 * into the predesignated buffer.
@@ -194,14 +193,14 @@ static void prvUARTCommandConsoleTask(void const * pvParameters)
 		 * signal for a processed character. ***/
 		while (rx_ready != 1)
 		{
-			HAL_UART_Receive_IT(&huart1, (uint8_t *) &cRxedChar, 1);
+			HAL_UART_Receive_IT(&huart1, &cRxedChar, 1);
 		}
 		rx_ready = 0;
 
 		/* Echo the character back. */
 		if (UART_CheckIdleState(&huart1) == HAL_OK && console_start == 1)
 		{
-			HAL_UART_Transmit(&huart1, (uint8_t *) &cRxedChar, sizeof(cRxedChar), sizeof(cRxedChar));
+			HAL_UART_Transmit(&huart1, &cRxedChar, sizeof(cRxedChar), sizeof(cRxedChar));
 		}
 
 		/*** Return-Key have been pressed ***/
@@ -308,7 +307,7 @@ static void prvUARTCommandConsoleTask(void const * pvParameters)
 /*** prvADCOutput
  * This command outputs the measured Voltages which are connected to the StromPi3 ***/
 
-static portBASE_TYPE prvADCOutput(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -383,13 +382,13 @@ static portBASE_TYPE prvADCOutput(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
  *
  * ***/
 
-static portBASE_TYPE prvMode(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvMode(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const int8_t * const pcMessage = (int8_t *) "****************************\r\nMode has been changed\r\n\n****************************\n";
-	int8_t *pcParameter1;
+	const char *pcMessage = "****************************\r\nMode has been changed\r\n\n****************************\n";
+	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
 
-	pcParameter1 = FreeRTOS_CLIGetParameter(
+	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -438,7 +437,8 @@ static portBASE_TYPE prvMode(int8_t *pcWriteBuffer, size_t xWriteBufferLen, cons
  * This command shows the actual time of the STM32 RTC-Module
  * ***/
 
-static portBASE_TYPE prvTimeOutput(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+__attribute__((unused))
+static portBASE_TYPE prvTimeOutput(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 
 	(void) pcCommandString;
@@ -466,27 +466,28 @@ static portBASE_TYPE prvTimeOutput(int8_t *pcWriteBuffer, size_t xWriteBufferLen
  *
  * ***/
 
-static portBASE_TYPE prvSetClock(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+__attribute__((unused))
+static portBASE_TYPE prvSetClock(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 
 	uint8_t hour;
 	uint8_t min;
 	uint8_t sec;
 
-	int8_t *pcParameter1;
+	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
 
-	pcParameter1 = FreeRTOS_CLIGetParameter(
+	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
 	1,
 	/* Store the parameter string length. */
 	&xParameter1StringLength);
-	int8_t *pcParameter2;
+	char *pcParameter2;
 	BaseType_t xParameter2StringLength;
 
-	pcParameter2 = FreeRTOS_CLIGetParameter(
+	pcParameter2 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -494,10 +495,10 @@ static portBASE_TYPE prvSetClock(int8_t *pcWriteBuffer, size_t xWriteBufferLen, 
 	/* Store the parameter string length. */
 	&xParameter2StringLength);
 
-	int8_t *pcParameter3;
+	char *pcParameter3;
 	BaseType_t xParameter3StringLength;
 
-	pcParameter3 = FreeRTOS_CLIGetParameter(
+	pcParameter3 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -547,7 +548,7 @@ static portBASE_TYPE prvSetClock(int8_t *pcWriteBuffer, size_t xWriteBufferLen, 
  *
  * ***/
 
-static portBASE_TYPE prvSetDate(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 
 	uint8_t day;
@@ -556,20 +557,20 @@ static portBASE_TYPE prvSetDate(int8_t *pcWriteBuffer, size_t xWriteBufferLen, c
 	uint8_t weekday;
 	char weekday_message[20];
 
-	int8_t *pcParameter1;
+	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
 
-	pcParameter1 = FreeRTOS_CLIGetParameter(
+	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
 	1,
 	/* Store the parameter string length. */
 	&xParameter1StringLength);
-	int8_t *pcParameter2;
+	char *pcParameter2;
 	BaseType_t xParameter2StringLength;
 
-	pcParameter2 = FreeRTOS_CLIGetParameter(
+	pcParameter2 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -577,10 +578,10 @@ static portBASE_TYPE prvSetDate(int8_t *pcWriteBuffer, size_t xWriteBufferLen, c
 	/* Store the parameter string length. */
 	&xParameter2StringLength);
 
-	int8_t *pcParameter3;
+	char *pcParameter3;
 	BaseType_t xParameter3StringLength;
 
-	pcParameter3 = FreeRTOS_CLIGetParameter(
+	pcParameter3 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -588,10 +589,10 @@ static portBASE_TYPE prvSetDate(int8_t *pcWriteBuffer, size_t xWriteBufferLen, c
 	/* Store the parameter string length. */
 	&xParameter3StringLength);
 
-	int8_t *pcParameter4;
+	char *pcParameter4;
 	BaseType_t xParameter4StringLength;
 
-	pcParameter4 = FreeRTOS_CLIGetParameter(
+	pcParameter4 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -667,14 +668,15 @@ static portBASE_TYPE prvSetDate(int8_t *pcWriteBuffer, size_t xWriteBufferLen, c
  *
  * ***/
 
-static portBASE_TYPE prvSetConfig(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+__attribute__((unused))
+static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	const int8_t * const pcMessage = (int8_t *) "";
 
-	int8_t *pcParameter1;
+	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
 
-	pcParameter1 = FreeRTOS_CLIGetParameter(
+	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -682,10 +684,10 @@ static portBASE_TYPE prvSetConfig(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
 	/* Store the parameter string length. */
 	&xParameter1StringLength);
 
-	int8_t *pcParameter2;
+	char *pcParameter2;
 	BaseType_t xParameter2StringLength;
 
-	pcParameter2 = FreeRTOS_CLIGetParameter(
+	pcParameter2 = (char *)FreeRTOS_CLIGetParameter(
 	/* The command string itself. */
 	pcCommandString,
 	/* Return the first parameter. */
@@ -784,9 +786,10 @@ static portBASE_TYPE prvSetConfig(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
  *
  * ***/
 
-static portBASE_TYPE prvStartStromPiConsole(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+__attribute__((unused))
+static portBASE_TYPE prvStartStromPiConsole(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const int8_t * const pcMessage = (int8_t *) "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
+	const char *pcMessage = "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
 
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -809,7 +812,8 @@ static portBASE_TYPE prvStartStromPiConsole(int8_t *pcWriteBuffer, size_t xWrite
  *
  * ***/
 
-static portBASE_TYPE prvStartStromPiConsoleQuick(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+__attribute__((unused))
+static portBASE_TYPE prvStartStromPiConsoleQuick(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	const int8_t * const pcMessage = (int8_t *) "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
 
@@ -836,9 +840,9 @@ static portBASE_TYPE prvStartStromPiConsoleQuick(int8_t *pcWriteBuffer, size_t x
  *
  * ***/
 
-static portBASE_TYPE prvQuitStromPiConsole(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvQuitStromPiConsole(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const int8_t * const pcMessage = (int8_t *) "";
+	const char* pcMessage = "";
 
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -862,9 +866,12 @@ static portBASE_TYPE prvQuitStromPiConsole(int8_t *pcWriteBuffer, size_t xWriteB
  *
  * ***/
 
-static portBASE_TYPE prvPowerOff(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+/* defined in main.c */
+extern void Config_Reset_Pin_Input_PullDOWN(void);
+
+static portBASE_TYPE prvPowerOff(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const int8_t * const pcMessage = (int8_t *) "\r\n Raspberry Pi Shutdown\r\n";
+	const char* pcMessage = "\r\n Raspberry Pi Shutdown\r\n";
 
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -894,7 +901,7 @@ static portBASE_TYPE prvPowerOff(int8_t *pcWriteBuffer, size_t xWriteBufferLen, 
  *
  * ***/
 
-static portBASE_TYPE prvTimeRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvTimeRPi(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -929,7 +936,7 @@ static portBASE_TYPE prvTimeRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, c
  *
  * ***/
 
-static portBASE_TYPE prvDateRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvDateRPi(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -964,7 +971,7 @@ static portBASE_TYPE prvDateRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, c
  *
  * ***/
 
-static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvStatusRPi(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -975,10 +982,6 @@ static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
 	uint32_t time;
 	uint32_t date;
 	uint8_t alarm_mode_tmp;
-	uint8_t alarm_time_tmp;
-	uint8_t alarm_date_tmp;
-	uint8_t alarm_weekday_tmp;
-	uint8_t alarm__tmp;
 
 	RTC_TimeTypeDef stimestructureget;
 	RTC_DateTypeDef sdatestructureget;
@@ -995,7 +998,7 @@ static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", date);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", sdatestructureget.WeekDay);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", sdatestructureget.WeekDay);
 
 	if (threeStageMode > 0)
 	{
@@ -1005,21 +1008,23 @@ static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
 		{
 		case 1:
 			modetemp = 5;
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", modetemp);
+			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", modetemp);
 			break;
 		case 2:
 			modetemp = 6;
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", modetemp);
+			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", modetemp);
 			break;
 		}
 	}
 
 	else
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", modus);
+		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", modus);
 	}
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_enable);
+
+	alarm_mode_tmp = 0;
 
 	if (alarmTime == 1)
 		alarm_mode_tmp = 1;
@@ -1028,69 +1033,69 @@ static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
 	else if (alarmWeekDay == 1)
 		alarm_mode_tmp = 3;
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_mode_tmp);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_mode_tmp);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_hour);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_hour);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_min);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_min);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_day);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_day);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_month);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_month);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_weekday);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_weekday);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarmPoweroff);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmPoweroff);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_hour_off);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_hour_off);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarm_min_off);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_min_off);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", shutdown_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", shutdown_enable);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", shutdown_time);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", shutdown_time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", warning_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", warning_enable);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", serialLessMode);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", serialLessMode);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarmInterval);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmInterval);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarmIntervalMinOn);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmIntervalMinOn);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", alarmIntervalMinOff);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmIntervalMinOff);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", batLevel_shutdown);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", batLevel_shutdown);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", batLevel);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", batLevel);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", charging);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", charging);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", powerOnButton_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powerOnButton_enable);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", powerOnButton_time);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powerOnButton_time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", powersave_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powersave_enable);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", poweroff_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", poweroff_enable);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", wakeup_time_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", wakeup_time_enable);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", wakeup_time);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", wakeup_time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", wakeupweekend_enable);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", wakeupweekend_enable);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", measuredValue[0]);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[0]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", measuredValue[1]);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[1]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", measuredValue[2]);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[2]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", measuredValue[3]);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[3]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", output_status);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", output_status);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", powerfailure_counter);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powerfailure_counter);
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), firmwareVersion);
 
@@ -1108,7 +1113,7 @@ static portBASE_TYPE prvStatusRPi(int8_t *pcWriteBuffer, size_t xWriteBufferLen,
  *
  * ***/
 
-static portBASE_TYPE prvShowStatus(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvShowStatus(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -1124,7 +1129,7 @@ static portBASE_TYPE prvShowStatus(int8_t *pcWriteBuffer, size_t xWriteBufferLen
 
 	sprintf((char *) pcWriteBuffer, "\r\n Time: %02d:%02d:%02d", stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
 
-	char temp_message[20];
+	char temp_message[24];
 
 	switch (sdatestructureget.WeekDay)
 	{
@@ -1299,9 +1304,9 @@ static portBASE_TYPE prvShowStatus(int8_t *pcWriteBuffer, size_t xWriteBufferLen
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  PowerOn-Button-Timer: %d seconds", powerOnButton_time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n FirmwareVersion: ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n FirmwareVersion: ");
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), firmwareVersion, temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), firmwareVersion);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -1315,7 +1320,7 @@ static portBASE_TYPE prvShowStatus(int8_t *pcWriteBuffer, size_t xWriteBufferLen
  *
  * ***/
 
-static portBASE_TYPE prvShowAlarm(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
