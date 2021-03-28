@@ -74,7 +74,7 @@ extern RTC_HandleTypeDef hrtc;
 
 uint8_t rx_ready = 0;
 uint8_t console_start = 0;
-uint8_t command_order = 0;
+uint8_t command_always_print = 0;
 
 char firmwareVersion[9] = "v1.72c";
 
@@ -168,7 +168,7 @@ void vUARTCommandConsoleStart(void)
  * The output of the command is then sent out to the serial
  * interface, when the console is enabled - there a special
  * commands (like dateRpi) which can bypass a deactivated console
- * through the flag command_order=1. This is used to communicate
+ * through the flag command_always_print=1. This is used to communicate
  * with the StromPi3 through scripts, where an input into the console
  * isn't needed ***/
 
@@ -249,10 +249,10 @@ static void prvUARTCommandConsoleTask(void *pvParameters)
 					xReturned = FreeRTOS_CLIProcessCommand(cInputString, pcOutputString, configCOMMAND_INT_MAX_OUTPUT_SIZE);
 
 					/* Write the generated string to the UART. */
-					if (console_start == 1 || command_order == 1)
+					if (console_start == 1 || command_always_print == 1)
 					{
 						HAL_UART_Transmit(&huart1, (uint8_t *) pcOutputString, strlen((char *) pcOutputString), strlen((char *) pcOutputString));
-						command_order = 0;
+						command_always_print = 0;
 					}
 				}
 
@@ -783,7 +783,7 @@ static portBASE_TYPE sspc(char *pcWriteBuffer)
  * The StromPi3 have two possibilities to send out the command-output to the Raspberry Pi
  *
  * - When the console_start flag is set to 1: This means that the user wants to configure the StromPi3 through the serial interface
- * - When the command_order flag is set to 1: This means that the output of the command can bypass a deactivated output - this is used to communicate with the StromPi3 through Scripts
+ * - When the command_always_print flag is set to 1: This means that the output of the command can bypass a deactivated output - this is used to communicate with the StromPi3 through Scripts
  *
  * prvStartStromPiConsole sets the "console_start" flag to 1
  *
@@ -880,7 +880,7 @@ static portBASE_TYPE prvPowerOff(char *pcWriteBuffer, size_t xWriteBufferLen, co
  *
  * This command is for programming the RTC Time through a script. (Like the RTCSerial.py script)
  *
- * It uses the command_order=1 flag to bypass a deactivated console_output to communicate directly to the Script executed by the Raspberry Pi
+ * It uses the command_always_print=1 flag to bypass a deactivated console_output to communicate directly to the Script executed by the Raspberry Pi
  *
  * ***/
 
@@ -902,7 +902,7 @@ static portBASE_TYPE prvTimeRPi(char *pcWriteBuffer, size_t xWriteBufferLen, con
 
 	time = stimestructureget.Hours * 10000 + stimestructureget.Minutes * 100 + stimestructureget.Seconds;
 
-	command_order = 1;
+	command_always_print = 1;
 
 	sprintf((char *) pcWriteBuffer, "%lu", time);
 
@@ -915,7 +915,7 @@ static portBASE_TYPE prvTimeRPi(char *pcWriteBuffer, size_t xWriteBufferLen, con
  *
  * This command is for programming the RTC Date through a script. (Like the RTCSerial.py script)
  *
- * It uses the command_order=1 flag to bypass a deactivated console_output to communicate directly to the Script executed by the Raspberry Pi
+ * It uses the command_always_print=1 flag to bypass a deactivated console_output to communicate directly to the Script executed by the Raspberry Pi
  *
  * ***/
 
@@ -937,7 +937,7 @@ static portBASE_TYPE prvDateRPi(char *pcWriteBuffer, size_t xWriteBufferLen, con
 
 	date = sdatestructureget.Year * 10000 + sdatestructureget.Month * 100 + sdatestructureget.Date;
 
-	command_order = 1;
+	command_always_print = 1;
 
 	sprintf((char *) pcWriteBuffer, "%lu", date);
 
@@ -975,7 +975,7 @@ static portBASE_TYPE prvStatusRPi(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	date = sdatestructureget.Year * 10000 + sdatestructureget.Month * 100 + sdatestructureget.Date;
 	time = stimestructureget.Hours * 10000 + stimestructureget.Minutes * 100 + stimestructureget.Seconds;
 
-	command_order = 1;
+	command_always_print = 1;
 
 	sprintf((char *) pcWriteBuffer, "%lu\n", time);
 
