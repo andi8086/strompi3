@@ -84,6 +84,10 @@ char firmwareVersion[9] = "v1.72c";
 #include "FreeRTOS_CLI.h"
 #include <UART_CLI.h>
 
+/* Useful stuff */
+#include <timedate.h>
+
+
 /* Dimensions the buffer into which input characters are placed. */
 #define cmdMAX_INPUT_SIZE			50
 
@@ -555,7 +559,6 @@ static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	uint8_t month;
 	uint8_t year;
 	uint8_t weekday;
-	char weekday_message[20];
 
 	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
@@ -629,32 +632,8 @@ static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, con
 		Error_Handler();
 	}
 
-	switch (weekday)
-	{
-	case 1:
-		strcpy(weekday_message, "Monday");
-		break;
-	case 2:
-		strcpy(weekday_message, "Tuesday");
-		break;
-	case 3:
-		strcpy(weekday_message, "Wednesday");
-		break;
-	case 4:
-		strcpy(weekday_message, "Thursday");
-		break;
-	case 5:
-		strcpy(weekday_message, "Friday");
-		break;
-	case 6:
-		strcpy(weekday_message, "Saturday");
-		break;
-	case 7:
-		strcpy(weekday_message, "Sunday");
-		break;
-	}
-
-	sprintf((char *) pcWriteBuffer, "The date has been set to %s %02d.%02d.20%02d", weekday_message, sdatestructure.Date, sdatestructure.Month, sdatestructure.Year);
+	sprintf((char *) pcWriteBuffer, "The date has been set to %s %02d.%02d.20%02d", getweekday(weekday),
+			sdatestructure.Date, sdatestructure.Month, sdatestructure.Year);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -1131,32 +1110,8 @@ static portBASE_TYPE prvShowStatus(char *pcWriteBuffer, size_t xWriteBufferLen, 
 
 	char temp_message[24];
 
-	switch (sdatestructureget.WeekDay)
-	{
-	case 1:
-		strcpy(temp_message, "Monday");
-		break;
-	case 2:
-		strcpy(temp_message, "Tuesday");
-		break;
-	case 3:
-		strcpy(temp_message, "Wednesday");
-		break;
-	case 4:
-		strcpy(temp_message, "Thursday");
-		break;
-	case 5:
-		strcpy(temp_message, "Friday");
-		break;
-	case 6:
-		strcpy(temp_message, "Saturday");
-		break;
-	case 7:
-		strcpy(temp_message, "Sunday");
-		break;
-	}
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", temp_message, sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
+			sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
 
 	switch (output_status)
 	{
@@ -1338,32 +1293,8 @@ static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 	char temp_message[21];
 
-	switch (sdatestructureget.WeekDay)
-	{
-	case 1:
-		strcpy(temp_message, "Monday");
-		break;
-	case 2:
-		strcpy(temp_message, "Tuesday");
-		break;
-	case 3:
-		strcpy(temp_message, "Wednesday");
-		break;
-	case 4:
-		strcpy(temp_message, "Thursday");
-		break;
-	case 5:
-		strcpy(temp_message, "Friday");
-		break;
-	case 6:
-		strcpy(temp_message, "Saturday");
-		break;
-	case 7:
-		strcpy(temp_message, "Sunday");
-		break;
-	}
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", temp_message, sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
+			sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
 
 	switch (alarm_enable)
 	{
@@ -1402,32 +1333,7 @@ static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, c
 		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "minutes");
 	}
 
-	switch (alarm_weekday)
-	{
-	case 1:
-		strcpy(temp_message, "Monday");
-		break;
-	case 2:
-		strcpy(temp_message, "Tuesday");
-		break;
-	case 3:
-		strcpy(temp_message, "Wednesday");
-		break;
-	case 4:
-		strcpy(temp_message, "Thursday");
-		break;
-	case 5:
-		strcpy(temp_message, "Friday");
-		break;
-	case 6:
-		strcpy(temp_message, "Saturday");
-		break;
-	case 7:
-		strcpy(temp_message, "Sunday");
-		break;
-	}
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Alarm-Weekday: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Alarm-Weekday: %s ", getweekday(alarm_weekday));
 
 	switch (wakeupweekend_enable)
 	{
