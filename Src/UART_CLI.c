@@ -101,6 +101,41 @@ char firmwareVersion[9] = "v1.72c";
 const char *dashline = "\r\n------------------------------\r\n";
 const char *starline = "****************************\r\n";
 
+const char * const __attribute__((section(".text#"))) state_en_dis[2] = {
+		"Disabled",
+		"Enabled"
+};
+
+const char * const __attribute__((section(".text#"))) output_status_msg[4] = {
+		"Power-Off",
+		"mUSB",
+		"Wide",
+		"Battery"
+};
+
+const char * const __attribute__((section(".text#"))) threeStageMode_msg[2] = {
+		"mUSB -> Wide -> Battery",
+		"Wide -> mUSB -> Battery"
+};
+
+/* TODO: Obviously here is a logic flaw (see last two entries) */
+const char * const __attribute__((section(".text#"))) dualStageMode_msg[6] = {
+		"mUSB -> Wide",
+		"Wide -> mUSB",
+		"mUSB -> Battery",
+		"Wide -> Battery",
+		"mUSB -> Wide -> Battery",
+		"Wide -> mUSB -> Battery"
+};
+
+
+const char * const __attribute__((section(".text#"))) batlevel_msg[5] = {
+		"Disabled",
+		"10%",
+		"25%",
+		"50%",
+		"100%"
+};
 /*-----------------------------------------------------------*/
 
 /*
@@ -323,57 +358,44 @@ static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
 
+	sprintf(pcWriteBuffer, "%sWide-Range-Inputvoltage: ", starline);
 
 	if (rawValue[0] > minWide)
 	{
-		sprintf((char *) pcWriteBuffer, "%sWide-Range-Inputvoltage: %d.%03d V",
-				starline, measuredValue[0] / 1000, measuredValue[0] % 1000);
+		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "%d.%03d V",
+				measuredValue[0] / 1000, measuredValue[0] % 1000);
 	}
 	else
 	{
-		sprintf((char *) pcWriteBuffer, "%sWide-Range-Inputvoltage: not connected",
-				starline);
+		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "not connected");
 	}
+
 	if (rawValue[1] > minBatConnect)
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\nLifePo4-Batteryvoltage: %d.%03d V", measuredValue[1] / 1000, measuredValue[1] % 1000);
+		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nLifePo4-Batteryvoltage: %d.%03d V",
+				measuredValue[1] / 1000, measuredValue[1] % 1000);
 
-		switch (batLevel)
-		{
-		case 1:
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), " [10%%]");
-			break;
-
-		case 2:
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), " [25%%]");
-			break;
-
-		case 3:
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), " [50%%]");
-			break;
-
-		case 4:
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), " [100%%]");
-			break;
-
+		if (batLevel >= 1) {
+			sprintf(pcWriteBuffer + strlen(pcWriteBuffer), " [%s]", batlevel_msg[batLevel]);
 		}
 
 		if (charging == 1)
 		{
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), " [charging]");
+			sprintf(pcWriteBuffer + strlen(pcWriteBuffer), " [charging]");
 		}
 	}
 	else
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\nLifePo4-Batteryvoltage: not connected");
+		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nLifePo4-Batteryvoltage: not connected");
 	}
 	if (rawValue[2] > minUSB)
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: %d.%03d V", measuredValue[2] / 1000, measuredValue[2] % 1000);
+		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: %d.%03d V",
+				measuredValue[2] / 1000, measuredValue[2] % 1000);
 	}
 	else
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: not connected");
+		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: not connected");
 	}
 	sprintf(pcWriteBuffer + strlen(pcWriteBuffer),
 			"\r\nOutput-Voltage: %d.%03d V\r\n%s",
@@ -896,21 +918,8 @@ static portBASE_TYPE prvStatusRPi(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 	if (threeStageMode > 0)
 	{
-		uint8_t modetemp;
-
-		switch (threeStageMode)
-		{
-		case 1:
-			modetemp = 5;
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", modetemp);
-			break;
-		case 2:
-			modetemp = 6;
-			sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", modetemp);
-			break;
-		}
+		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", threeStageMode + 4);
 	}
-
 	else
 	{
 		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", modus);
@@ -1023,160 +1032,60 @@ static portBASE_TYPE prvShowStatus(char *pcWriteBuffer, size_t xWriteBufferLen, 
 
 	sprintf((char *) pcWriteBuffer, "\r\n Time: %02d:%02d:%02d", stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
 
-	char temp_message[24];
+	char *temp_message;
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
 			sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
 
-	switch (output_status)
-	{
-	case 0:
-		strcpy(temp_message, "Power-Off");
-		break; //For Debuging
-	case 1:
-		strcpy(temp_message, "mUSB");
-		break;
-	case 2:
-		strcpy(temp_message, "Wide");
-		break;
-	case 3:
-		strcpy(temp_message, "Battery");
-		break;
-	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n StromPi-Output:  %s \r\n", temp_message);
+
+
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n StromPi-Output:  %s \r\n",
+			output_status_msg[output_status]);
+
+
 
 	if (threeStageMode > 0)
 	{
-		switch (threeStageMode)
-		{
-		case 1:
-			strcpy(temp_message, "mUSB -> Wide -> Battery");
-			break;
-		case 2:
-			strcpy(temp_message, "Wide -> mUSB -> Battery");
-			break;
-		}
+		temp_message = (char *)threeStageMode_msg[threeStageMode];
 	}
-
 	else
 	{
-		switch (modus)
-		{
-		case 1:
-			strcpy(temp_message, "mUSB -> Wide");
-			break;
-		case 2:
-			strcpy(temp_message, "Wide -> mUSB");
-			break;
-		case 3:
-			strcpy(temp_message, "mUSB -> Battery");
-			break;
-		case 4:
-			strcpy(temp_message, "Wide -> Battery");
-			break;
-		case 5:
-			strcpy(temp_message, "mUSB -> Wide -> Battery");
-			break;
-		case 6:
-			strcpy(temp_message, "Wide -> mUSB -> Battery");
-			break;
-		}
+		temp_message = (char *)dualStageMode_msg[modus];
 	}
+
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n StromPi-Mode: %s \r\n", temp_message);
 
-	switch (shutdown_enable)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Raspberry Pi Shutdown: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Raspberry Pi Shutdown: %s ",
+			state_en_dis[shutdown_enable]);
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Shutdown-Timer: %d seconds", shutdown_time);
 
-	switch (warning_enable)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Powerfail Warning: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Powerfail Warning: %s ",
+			state_en_dis[warning_enable]);
 
-	switch (serialLessMode)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Serial-Less Mode: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Serial-Less Mode: %s ",
+			state_en_dis[serialLessMode]);
 
-	switch (powersave_enable)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Power Save Mode: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Power Save Mode: %s ",
+			state_en_dis[powersave_enable]);
 
-	switch (poweroff_enable)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Power-Off Mode: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Power-Off Mode: %s ",
+			state_en_dis[poweroff_enable]);
 
-	switch (batLevel_shutdown)
-	{
-	case 0:
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Battery-Level Shutdown: Disabled");
-		break;
-	case 1:
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Battery-Level Shutdown: 10%%");
-		break;
-	case 2:
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Battery-Level Shutdown: 25%%");
-		break;
-	case 3:
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Battery-Level Shutdown: 50%%");
-		break;
-	}
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Battery-Level Shutdown: %s",
+				batlevel_msg[batLevel_shutdown]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Powerfailure-Counter: %d", powerfailure_counter);
 
-	switch (powerOnButton_enable)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Powerfailure-Counter: %d",
+			powerfailure_counter);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n PowerOn-Button: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n PowerOn-Button: %s ",
+			state_en_dis[powerOnButton_enable]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  PowerOn-Button-Timer: %d seconds", powerOnButton_time);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  PowerOn-Button-Timer: %d seconds",
+			powerOnButton_time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n FirmwareVersion: ");
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), firmwareVersion);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n FirmwareVersion: %s", firmwareVersion);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -1211,16 +1120,9 @@ static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
 			sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
 
-	switch (alarm_enable)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n WakeUp-Alarm: %s ", temp_message);
+
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n WakeUp-Alarm: %s ",
+			state_en_dis[alarm_enable]);
 
 	if (wakeup_time_enable == 1)
 		strcpy(temp_message, "Minute Wakeup Alarm");
@@ -1250,42 +1152,16 @@ static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Alarm-Weekday: %s ", getweekday(alarm_weekday));
 
-	switch (wakeupweekend_enable)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Weekend Wake-Up: %s \r\n ",
+			state_en_dis[wakeupweekend_enable]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Weekend Wake-Up: %s \r\n ", temp_message);
-
-	switch (alarmPoweroff)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n PowerOff-Alarm: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n PowerOff-Alarm: %s ",
+			state_en_dis[alarmPoweroff]);
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  PowerOff-Alarm-Time: %02d:%02d\r\n", alarm_hour_off, alarm_min_off);
 
-	switch (alarmInterval)
-	{
-	case 0:
-		strcpy(temp_message, "Disabled");
-		break;
-	case 1:
-		strcpy(temp_message, "Enabled");
-		break;
-	}
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Interval-Alarm: %s ", temp_message);
+	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Interval-Alarm: %s ",
+			state_en_dis[alarmInterval]);
 
 	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Interval-Alarm-OnTime: %d minutes\r", alarmIntervalMinOn);
 
