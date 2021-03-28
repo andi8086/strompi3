@@ -398,21 +398,11 @@ static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, c
 static portBASE_TYPE prvMode(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	const char *pcMessage = "%sMode has been changed\r\n%s";
-	char *pcParameter1;
-	BaseType_t xParameter1StringLength;
+	char *pcParam;
+	BaseType_t xParamLen;
 
-	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	1,
-	/* Store the parameter string length. */
-	&xParameter1StringLength);
-
-	/*** The parameter which has been included into the entered
-	 * command is saved into the "modus" variable  ***/
-
-	modus = ascii2int(pcParameter1);
+	pcParam = (char *)FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParamLen);
+	modus = ascii2int(pcParam);
 
 	if (modus < 5)
 	{
@@ -488,37 +478,13 @@ static portBASE_TYPE prvSetClock(char *pcWriteBuffer, size_t xWriteBufferLen, co
 	uint8_t min;
 	uint8_t sec;
 
-	char *pcParameter1;
-	BaseType_t xParameter1StringLength;
+	char *pcParams[3];
+	BaseType_t xParamLens[3];
 
-	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	1,
-	/* Store the parameter string length. */
-	&xParameter1StringLength);
-	char *pcParameter2;
-	BaseType_t xParameter2StringLength;
-
-	pcParameter2 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	2,
-	/* Store the parameter string length. */
-	&xParameter2StringLength);
-
-	char *pcParameter3;
-	BaseType_t xParameter3StringLength;
-
-	pcParameter3 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	3,
-	/* Store the parameter string length. */
-	&xParameter3StringLength);
+	for (int i = 0; i < 3; i++) {
+		pcParams[i] = (char *)FreeRTOS_CLIGetParameter(pcCommandString, i, &xParamLens[i]);
+		pcParams[i][xParamLens[i]] = 0;
+	}
 
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -526,13 +492,10 @@ static portBASE_TYPE prvSetClock(char *pcWriteBuffer, size_t xWriteBufferLen, co
 	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
 
-	pcParameter1[xParameter1StringLength] = 0x00;
-	pcParameter2[xParameter2StringLength] = 0x00;
-	pcParameter3[xParameter3StringLength] = 0x00;
 
-	hour = ascii2int(pcParameter1);
-	min = ascii2int(pcParameter2);
-	sec = ascii2int(pcParameter3);
+	hour = ascii2int(pcParams[0]);
+	min = ascii2int(pcParams[1]);
+	sec = ascii2int(pcParams[2]);
 
 	RTC_TimeTypeDef stimestructure;
 
@@ -571,48 +534,13 @@ static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	uint8_t year;
 	uint8_t weekday;
 
-	char *pcParameter1;
-	BaseType_t xParameter1StringLength;
+	char *pcParams[4];
+	BaseType_t xParamLens[4];
 
-	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	1,
-	/* Store the parameter string length. */
-	&xParameter1StringLength);
-	char *pcParameter2;
-	BaseType_t xParameter2StringLength;
-
-	pcParameter2 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	2,
-	/* Store the parameter string length. */
-	&xParameter2StringLength);
-
-	char *pcParameter3;
-	BaseType_t xParameter3StringLength;
-
-	pcParameter3 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	3,
-	/* Store the parameter string length. */
-	&xParameter3StringLength);
-
-	char *pcParameter4;
-	BaseType_t xParameter4StringLength;
-
-	pcParameter4 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	4,
-	/* Store the parameter string length. */
-	&xParameter4StringLength);
+	for (int i = 0; i < 4; i++) {
+		pcParams[i] = (char *)FreeRTOS_CLIGetParameter(pcCommandString, i, &xParamLens[i]);
+		pcParams[i][xParamLens[i]] = 0;
+	}
 
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -620,15 +548,10 @@ static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
 
-	pcParameter1[xParameter1StringLength] = 0x00;
-	pcParameter2[xParameter2StringLength] = 0x00;
-	pcParameter3[xParameter3StringLength] = 0x00;
-	pcParameter4[xParameter4StringLength] = 0x00;
-
-	day = ascii2int(pcParameter1);
-	month = ascii2int(pcParameter2);
-	year = ascii2int(pcParameter3);
-	weekday = ascii2int(pcParameter4);
+	day = ascii2int(pcParams[0]);
+	month = ascii2int(pcParams[1]);
+	year = ascii2int(pcParams[2]);
+	weekday = ascii2int(pcParams[3]);
 
 	RTC_DateTypeDef sdatestructure;
 
@@ -666,24 +589,12 @@ static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
 
-	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	1,
-	/* Store the parameter string length. */
-	&xParameter1StringLength);
+	pcParameter1 = (char *)FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
 
 	char *pcParameter2;
 	BaseType_t xParameter2StringLength;
 
-	pcParameter2 = (char *)FreeRTOS_CLIGetParameter(
-	/* The command string itself. */
-	pcCommandString,
-	/* Return the first parameter. */
-	2,
-	/* Store the parameter string length. */
-	&xParameter2StringLength);
+	pcParameter2 = (char *)FreeRTOS_CLIGetParameter(pcCommandString, 2, &xParameter2StringLength);
 
 	pcParameter1[xParameter1StringLength] = 0x00;
 	pcParameter2[xParameter2StringLength] = 0x00;
