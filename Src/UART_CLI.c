@@ -97,6 +97,10 @@ char firmwareVersion[9] = "v1.72c";
 /* Block times of 50 and 500milliseconds, specified in ticks. */
 #define cmd50ms						( ( void * ) ( 50UL / portTICK_RATE_MS ) )
 #define cmd500ms					( ( void * ) ( 500UL / portTICK_RATE_MS ) )
+
+const char *dashline = "\r\n------------------------------\r\n";
+const char *starline = "****************************\r\n";
+
 /*-----------------------------------------------------------*/
 
 /*
@@ -319,13 +323,16 @@ static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
 
+
 	if (rawValue[0] > minWide)
 	{
-		sprintf((char *) pcWriteBuffer, "****************************\r\nWide-Range-Inputvoltage: %d.%03d V", measuredValue[0] / 1000, measuredValue[0] % 1000);
+		sprintf((char *) pcWriteBuffer, "%sWide-Range-Inputvoltage: %d.%03d V",
+				starline, measuredValue[0] / 1000, measuredValue[0] % 1000);
 	}
 	else
 	{
-		sprintf((char *) pcWriteBuffer, "****************************\r\nWide-Range-Inputvoltage: not connected");
+		sprintf((char *) pcWriteBuffer, "%sWide-Range-Inputvoltage: not connected",
+				starline);
 	}
 	if (rawValue[1] > minBatConnect)
 	{
@@ -369,8 +376,8 @@ static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, c
 		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: not connected");
 	}
 	sprintf(pcWriteBuffer + strlen(pcWriteBuffer),
-			"\r\nOutput-Voltage: %d.%03d V\r\n****************************\r\n",
-			measuredValue[3] / 1000, measuredValue[3] % 1000);
+			"\r\nOutput-Voltage: %d.%03d V\r\n%s",
+			measuredValue[3] / 1000, measuredValue[3] % 1000, starline);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -390,7 +397,7 @@ static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 static portBASE_TYPE prvMode(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const char *pcMessage = "****************************\r\nMode has been changed\r\n\n****************************\n";
+	const char *pcMessage = "%sMode has been changed\r\n%s";
 	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
 
@@ -428,7 +435,7 @@ static portBASE_TYPE prvMode(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
 
-	strcpy((char *) pcWriteBuffer, (char *) pcMessage);
+	sprintf(pcWriteBuffer, pcMessage, starline, starline);
 
 	/*** The updated "modus"-variable is written into the flash ***/
 	flashConfig();
@@ -759,13 +766,13 @@ static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 static portBASE_TYPE sspc(char *pcWriteBuffer)
 {
-	const char *pcMessage = "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
+	const char *pcMessage = "%s Welcome to the StromPi 3 Console %s Type " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
 	configASSERT(pcWriteBuffer);
 
 	/* This function assumes the buffer length is adequate. */
 	console_start = 1;
 
-	strcpy(pcWriteBuffer, pcMessage);
+	sprintf(pcWriteBuffer, pcMessage, dashline, dashline);
 
 	return pdFALSE;
 }
