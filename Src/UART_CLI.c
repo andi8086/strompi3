@@ -757,6 +757,19 @@ static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 /*-----------------------------------------------------------*/
 
+static portBASE_TYPE sspc(char *pcWriteBuffer)
+{
+	const char *pcMessage = "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
+	configASSERT(pcWriteBuffer);
+
+	/* This function assumes the buffer length is adequate. */
+	console_start = 1;
+
+	strcpy(pcWriteBuffer, pcMessage);
+
+	return pdFALSE;
+}
+
 /*** prvStartStromPiConsole
  *
  * This command enables the console output for the user.
@@ -772,19 +785,9 @@ static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, c
 __attribute__((unused))
 static portBASE_TYPE prvStartStromPiConsole(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const char *pcMessage = "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
-
 	(void) pcCommandString;
-	configASSERT(pcWriteBuffer);
-
-	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
-
-	console_start = 1;
-
-	strcpy(pcWriteBuffer, pcMessage);
-
-	return pdFALSE;
+	return sspc(pcWriteBuffer);
 }
 
 /*-----------------------------------------------------------*/
@@ -798,19 +801,9 @@ static portBASE_TYPE prvStartStromPiConsole(char *pcWriteBuffer, size_t xWriteBu
 __attribute__((unused))
 static portBASE_TYPE prvStartStromPiConsoleQuick(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const char* pcMessage = "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
-
 	(void) pcCommandString;
-	configASSERT(pcWriteBuffer);
-
-	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
-
-	console_start = 1;
-
-	strcpy(pcWriteBuffer, pcMessage);
-
-	return pdFALSE;
+	return sspc(pcWriteBuffer);
 }
 
 /*-----------------------------------------------------------*/
