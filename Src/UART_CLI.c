@@ -368,7 +368,9 @@ static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	{
 		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: not connected");
 	}
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\nOutput-Voltage: %d.%03d V\r\n****************************\r\n", measuredValue[3] / 1000, measuredValue[3] % 1000);
+	sprintf(pcWriteBuffer + strlen(pcWriteBuffer),
+			"\r\nOutput-Voltage: %d.%03d V\r\n****************************\r\n",
+			measuredValue[3] / 1000, measuredValue[3] % 1000);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -457,7 +459,8 @@ static portBASE_TYPE prvTimeOutput(char *pcWriteBuffer, size_t xWriteBufferLen, 
 	/* This function assumes the buffer length is adequate. */
 	(void) xWriteBufferLen;
 
-	sprintf((char *) pcWriteBuffer, "%02d:%02d:%02d", stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
+	sprintf(pcWriteBuffer, "%02d:%02d:%02d",
+			stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -538,7 +541,8 @@ static portBASE_TYPE prvSetClock(char *pcWriteBuffer, size_t xWriteBufferLen, co
 		Error_Handler();
 	}
 
-	sprintf((char *) pcWriteBuffer, "The clock has been set to %02d:%02d:%02d", stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds);
+	sprintf(pcWriteBuffer, "The clock has been set to %02d:%02d:%02d",
+			stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -632,7 +636,7 @@ static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, con
 		Error_Handler();
 	}
 
-	sprintf((char *) pcWriteBuffer, "The date has been set to %s %02d.%02d.20%02d", getweekday(weekday),
+	sprintf(pcWriteBuffer, "The date has been set to %s %02d.%02d.20%02d", getweekday(weekday),
 			sdatestructure.Date, sdatestructure.Month, sdatestructure.Year);
 
 	/* There is no more data to return after this single string, so return
@@ -650,7 +654,7 @@ static portBASE_TYPE prvSetDate(char *pcWriteBuffer, size_t xWriteBufferLen, con
 __attribute__((unused))
 static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const int8_t * const pcMessage = (int8_t *) "";
+	const char * pcMessage = "";
 
 	char *pcParameter1;
 	BaseType_t xParameter1StringLength;
@@ -744,7 +748,7 @@ static portBASE_TYPE prvSetConfig(char *pcWriteBuffer, size_t xWriteBufferLen, c
 		configParamters[commandParameter1] = commandParameter2;
 	}
 
-	strcpy((char *) pcWriteBuffer, (char *) pcMessage);
+	strcpy(pcWriteBuffer, pcMessage);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -778,7 +782,7 @@ static portBASE_TYPE prvStartStromPiConsole(char *pcWriteBuffer, size_t xWriteBu
 
 	console_start = 1;
 
-	strcpy((char *) pcWriteBuffer, (char *) pcMessage);
+	strcpy(pcWriteBuffer, pcMessage);
 
 	return pdFALSE;
 }
@@ -794,7 +798,7 @@ static portBASE_TYPE prvStartStromPiConsole(char *pcWriteBuffer, size_t xWriteBu
 __attribute__((unused))
 static portBASE_TYPE prvStartStromPiConsoleQuick(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const int8_t * const pcMessage = (int8_t *) "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
+	const char* pcMessage = "\r\n------------------------------\r\nWelcome to the StromPi 3 Console\r\n------------------------------\r\nType " "help" " to view a list of available commands.\r\n\r\n[When you press ENTER the previous command would be executed again]\r\n";
 
 	(void) pcCommandString;
 	configASSERT(pcWriteBuffer);
@@ -804,7 +808,7 @@ static portBASE_TYPE prvStartStromPiConsoleQuick(char *pcWriteBuffer, size_t xWr
 
 	console_start = 1;
 
-	strcpy((char *) pcWriteBuffer, (char *) pcMessage);
+	strcpy(pcWriteBuffer, pcMessage);
 
 	return pdFALSE;
 }
