@@ -52,8 +52,9 @@
  */
 
 /* Standard includes. */
-#include "string.h"
+#include <string.h>
 #include <inttypes.h>
+#include <stdarg.h>
 
 /*** STM32-HAL Includes ***/
 
@@ -188,6 +189,16 @@ void vUARTCommandConsoleStart(void)
 	FreeRTOS_CLIRegisterCommand(&xQuitStromPiConsole);
 
 }
+
+
+static void sprintf_append(char *buffer, char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vsprintf(buffer + strlen(buffer), format, args);
+	va_end(args);
+}
+
 
 /*-----------------------------------------------------------*/
 /*** This defines the UART Console Task
@@ -348,43 +359,42 @@ static portBASE_TYPE prvADCOutput(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 	if (rawValue[0] > minWide)
 	{
-		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "%d.%03d V",
+		sprintf_append(pcWriteBuffer, "%d.%03d V",
 				measuredValue[0] / 1000, measuredValue[0] % 1000);
 	}
 	else
 	{
-		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "not connected");
+		sprintf_append(pcWriteBuffer, "not connected");
 	}
 
 	if (rawValue[1] > minBatConnect)
 	{
-		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nLifePo4-Batteryvoltage: %d.%03d V",
+		sprintf_append(pcWriteBuffer, "\r\nLifePo4-Batteryvoltage: %d.%03d V",
 				measuredValue[1] / 1000, measuredValue[1] % 1000);
 
 		if (batLevel >= 1) {
-			sprintf(pcWriteBuffer + strlen(pcWriteBuffer), " [%s]", batlevel_msg[batLevel]);
+			sprintf_append(pcWriteBuffer, " [%s]", batlevel_msg[batLevel]);
 		}
 
 		if (charging == 1)
 		{
-			sprintf(pcWriteBuffer + strlen(pcWriteBuffer), " [charging]");
+			sprintf_append(pcWriteBuffer, " [charging]");
 		}
 	}
 	else
 	{
-		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nLifePo4-Batteryvoltage: not connected");
+		sprintf_append(pcWriteBuffer, "\r\nLifePo4-Batteryvoltage: not connected");
 	}
 	if (rawValue[2] > minUSB)
 	{
-		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: %d.%03d V",
+		sprintf_append(pcWriteBuffer, "\r\nmicroUSB-Inputvoltage: %d.%03d V",
 				measuredValue[2] / 1000, measuredValue[2] % 1000);
 	}
 	else
 	{
-		sprintf(pcWriteBuffer + strlen(pcWriteBuffer), "\r\nmicroUSB-Inputvoltage: not connected");
+		sprintf_append(pcWriteBuffer, "\r\nmicroUSB-Inputvoltage: not connected");
 	}
-	sprintf(pcWriteBuffer + strlen(pcWriteBuffer),
-			"\r\nOutput-Voltage: %d.%03d V\r\n%s",
+	sprintf_append(pcWriteBuffer, "\r\nOutput-Voltage: %d.%03d V\r\n%s",
 			measuredValue[3] / 1000, measuredValue[3] % 1000, starline);
 
 	/* There is no more data to return after this single string, so return
@@ -754,7 +764,7 @@ static portBASE_TYPE prvQuitStromPiConsole(char *pcWriteBuffer, size_t xWriteBuf
 
 	console_start = 0;
 
-	strcpy((char *) pcWriteBuffer, (char *) pcMessage);
+	strcpy(pcWriteBuffer, pcMessage);
 
 	return pdFALSE;
 }
@@ -788,7 +798,7 @@ static portBASE_TYPE prvPowerOff(char *pcWriteBuffer, size_t xWriteBufferLen, co
 
 	Config_Reset_Pin_Input_PullDOWN();
 
-	strcpy((char *) pcWriteBuffer, (char *) pcMessage);
+	strcpy(pcWriteBuffer, pcMessage);
 
 	return pdFALSE;
 }
@@ -823,7 +833,7 @@ static portBASE_TYPE prvTimeRPi(char *pcWriteBuffer, size_t xWriteBufferLen, con
 
 	command_always_print = 1;
 
-	sprintf((char *) pcWriteBuffer, "%lu", time);
+	sprintf(pcWriteBuffer, "%lu", time);
 
 	return pdFALSE;
 }
@@ -858,7 +868,7 @@ static portBASE_TYPE prvDateRPi(char *pcWriteBuffer, size_t xWriteBufferLen, con
 
 	command_always_print = 1;
 
-	sprintf((char *) pcWriteBuffer, "%lu", date);
+	sprintf(pcWriteBuffer, "%lu", date);
 
 	return pdFALSE;
 }
@@ -896,22 +906,22 @@ static portBASE_TYPE prvStatusRPi(char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 	command_always_print = 1;
 
-	sprintf((char *) pcWriteBuffer, "%lu\n", time);
+	sprintf(pcWriteBuffer, "%lu\n", time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%lu\n", date);
+	sprintf_append(pcWriteBuffer, "%lu\n", date);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", sdatestructureget.WeekDay);
+	sprintf_append(pcWriteBuffer, "%u\n", sdatestructureget.WeekDay);
 
 	if (threeStageMode > 0)
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", threeStageMode + 4);
+		sprintf_append(pcWriteBuffer, "%u\n", threeStageMode + 4);
 	}
 	else
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", modus);
+		sprintf_append(pcWriteBuffer, "%u\n", modus);
 	}
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_enable);
 
 	alarm_mode_tmp = 0;
 
@@ -922,76 +932,42 @@ static portBASE_TYPE prvStatusRPi(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	else if (alarmWeekDay == 1)
 		alarm_mode_tmp = 3;
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_mode_tmp);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_hour);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_min);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_day);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_month);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_weekday);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmPoweroff);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_hour_off);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarm_min_off);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", shutdown_enable);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", shutdown_time);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", warning_enable);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", serialLessMode);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmInterval);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmIntervalMinOn);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", alarmIntervalMinOff);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", batLevel_shutdown);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", batLevel);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", charging);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powerOnButton_enable);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powerOnButton_time);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powersave_enable);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", poweroff_enable);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", wakeup_time_enable);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", wakeup_time);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", wakeupweekend_enable);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[0]);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[1]);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[2]);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", measuredValue[3]);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", output_status);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "%u\n", powerfailure_counter);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), firmwareVersion);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\n");
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_mode_tmp);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_hour);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_min);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_day);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_month);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_weekday);
+	sprintf_append(pcWriteBuffer, "%u\n", alarmPoweroff);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_hour_off);
+	sprintf_append(pcWriteBuffer, "%u\n", alarm_min_off);
+	sprintf_append(pcWriteBuffer, "%u\n", shutdown_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", shutdown_time);
+	sprintf_append(pcWriteBuffer, "%u\n", warning_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", serialLessMode);
+	sprintf_append(pcWriteBuffer, "%u\n", alarmInterval);
+	sprintf_append(pcWriteBuffer, "%u\n", alarmIntervalMinOn);
+	sprintf_append(pcWriteBuffer, "%u\n", alarmIntervalMinOff);
+	sprintf_append(pcWriteBuffer, "%u\n", batLevel_shutdown);
+	sprintf_append(pcWriteBuffer, "%u\n", batLevel);
+	sprintf_append(pcWriteBuffer, "%u\n", charging);
+	sprintf_append(pcWriteBuffer, "%u\n", powerOnButton_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", powerOnButton_time);
+	sprintf_append(pcWriteBuffer, "%u\n", powersave_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", poweroff_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", wakeup_time_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", wakeup_time);
+	sprintf_append(pcWriteBuffer, "%u\n", wakeupweekend_enable);
+	sprintf_append(pcWriteBuffer, "%u\n", measuredValue[0]);
+	sprintf_append(pcWriteBuffer, "%u\n", measuredValue[1]);
+	sprintf_append(pcWriteBuffer, "%u\n", measuredValue[2]);
+	sprintf_append(pcWriteBuffer, "%u\n", measuredValue[3]);
+	sprintf_append(pcWriteBuffer, "%u\n", output_status);
+	sprintf_append(pcWriteBuffer, "%u\n", powerfailure_counter);
+	sprintf_append(pcWriteBuffer, firmwareVersion);
+	sprintf_append(pcWriteBuffer, "\n");
 
 	return pdFALSE;
-
 }
 
 /*-----------------------------------------------------------*/
@@ -1016,19 +992,16 @@ static portBASE_TYPE prvShowStatus(char *pcWriteBuffer, size_t xWriteBufferLen, 
 	HAL_RTC_GetTime(&hrtc, &stimestructureget, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&hrtc, &sdatestructureget, RTC_FORMAT_BIN);
 
-	sprintf((char *) pcWriteBuffer, "\r\n Time: %02d:%02d:%02d", stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
+	sprintf(pcWriteBuffer, "\r\n Time: %02d:%02d:%02d",
+			stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
 
 	char *temp_message;
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
+	sprintf_append(pcWriteBuffer, "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
 			sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
 
-
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n StromPi-Output:  %s \r\n",
+	sprintf_append(pcWriteBuffer, "\r\n StromPi-Output:  %s \r\n",
 			output_status_msg[output_status]);
-
-
 
 	if (threeStageMode > 0)
 	{
@@ -1039,39 +1012,39 @@ static portBASE_TYPE prvShowStatus(char *pcWriteBuffer, size_t xWriteBufferLen, 
 		temp_message = (char *)dualStageMode_msg[modus];
 	}
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n StromPi-Mode: %s \r\n", temp_message);
+	sprintf_append(pcWriteBuffer, "\r\n StromPi-Mode: %s \r\n", temp_message);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Raspberry Pi Shutdown: %s ",
+	sprintf_append(pcWriteBuffer, "\r\n Raspberry Pi Shutdown: %s ",
 			state_en_dis[shutdown_enable]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Shutdown-Timer: %d seconds", shutdown_time);
+	sprintf_append(pcWriteBuffer, "\r\n  Shutdown-Timer: %d seconds", shutdown_time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Powerfail Warning: %s ",
+	sprintf_append(pcWriteBuffer, "\r\n\r\n Powerfail Warning: %s ",
 			state_en_dis[warning_enable]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Serial-Less Mode: %s ",
+	sprintf_append(pcWriteBuffer, "\r\n\r\n Serial-Less Mode: %s ",
 			state_en_dis[serialLessMode]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Power Save Mode: %s ",
+	sprintf_append(pcWriteBuffer, "\r\n\r\n Power Save Mode: %s ",
 			state_en_dis[powersave_enable]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Power-Off Mode: %s ",
+	sprintf_append(pcWriteBuffer, "\r\n\r\n Power-Off Mode: %s ",
 			state_en_dis[poweroff_enable]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Battery-Level Shutdown: %s",
+	sprintf_append(pcWriteBuffer, "\r\n\r\n Battery-Level Shutdown: %s",
 				batlevel_msg[batLevel_shutdown]);
 
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n Powerfailure-Counter: %d",
+	sprintf_append(pcWriteBuffer, "\r\n\r\n Powerfailure-Counter: %d",
 			powerfailure_counter);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n PowerOn-Button: %s ",
+	sprintf_append(pcWriteBuffer, "\r\n\r\n PowerOn-Button: %s ",
 			state_en_dis[powerOnButton_enable]);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  PowerOn-Button-Timer: %d seconds",
+	sprintf_append(pcWriteBuffer, "\r\n  PowerOn-Button-Timer: %d seconds",
 			powerOnButton_time);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n\r\n FirmwareVersion: %s", firmwareVersion);
+	sprintf_append(pcWriteBuffer, "\r\n\r\n FirmwareVersion: %s", firmwareVersion);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
@@ -1099,15 +1072,15 @@ static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	HAL_RTC_GetTime(&hrtc, &stimestructureget, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&hrtc, &sdatestructureget, RTC_FORMAT_BIN);
 
-	sprintf((char *) pcWriteBuffer, "\r\n Time: %02d:%02d:%02d", stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
+	sprintf(pcWriteBuffer, "\r\n Time: %02d:%02d:%02d",
+			stimestructureget.Hours, stimestructureget.Minutes, stimestructureget.Seconds);
 
 	char temp_message[21];
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
+	sprintf_append(pcWriteBuffer, "\r\n Date: %s %02d.%02d.20%02d\r\n", getweekday(sdatestructureget.WeekDay),
 			sdatestructureget.Date, sdatestructureget.Month, sdatestructureget.Year);
 
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n WakeUp-Alarm: %s ",
+	sprintf_append(pcWriteBuffer, "\r\n WakeUp-Alarm: %s ",
 			state_en_dis[alarm_enable]);
 
 	if (wakeup_time_enable == 1)
@@ -1119,39 +1092,26 @@ static portBASE_TYPE prvShowAlarm(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	else if (alarmWeekDay == 1)
 		strcpy(temp_message, "Weekday-Alarm");
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Alarm-Mode: %s ", temp_message);
+	sprintf_append(pcWriteBuffer, "\r\n  Alarm-Mode: %s ", temp_message);
+	sprintf_append(pcWriteBuffer, "\r\n  Alarm-Time: %02d:%02d", alarm_hour, alarm_min);
+	sprintf_append(pcWriteBuffer, "\r\n  Alarm-Date: %02d.%02d", alarm_day, alarm_month);
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Alarm-Time: %02d:%02d", alarm_hour, alarm_min);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Alarm-Date: %02d.%02d", alarm_day, alarm_month);
-
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "  \r\n  Minute Wakeup Time: %d ", wakeup_time);
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "minutes");
-
+	sprintf_append(pcWriteBuffer, "  \r\n  Minute Wakeup Time: %d ", wakeup_time);
+	sprintf_append(pcWriteBuffer, "minutes");
 
 	if (wakeup_time_enable == 1)
 	{
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "  \r\n  Minute Wakeup Time: %d ", wakeup_time);
-		sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "minutes");
+		sprintf_append(pcWriteBuffer, "  \r\n  Minute Wakeup Time: %d ", wakeup_time);
+		sprintf_append(pcWriteBuffer, "minutes");
 	}
 
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Alarm-Weekday: %s ", getweekday(alarm_weekday));
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Weekend Wake-Up: %s \r\n ",
-			state_en_dis[wakeupweekend_enable]);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n PowerOff-Alarm: %s ",
-			state_en_dis[alarmPoweroff]);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  PowerOff-Alarm-Time: %02d:%02d\r\n", alarm_hour_off, alarm_min_off);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n Interval-Alarm: %s ",
-			state_en_dis[alarmInterval]);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Interval-Alarm-OnTime: %d minutes\r", alarmIntervalMinOn);
-
-	sprintf((char *) pcWriteBuffer + strlen((char *) pcWriteBuffer), "\r\n  Interval-Alarm-OffTime: %d minutes\r\n", alarmIntervalMinOff);
+	sprintf_append(pcWriteBuffer, "\r\n  Alarm-Weekday: %s ", getweekday(alarm_weekday));
+	sprintf_append(pcWriteBuffer, "\r\n  Weekend Wake-Up: %s \r\n ", state_en_dis[wakeupweekend_enable]);
+	sprintf_append(pcWriteBuffer, "\r\n PowerOff-Alarm: %s ", state_en_dis[alarmPoweroff]);
+	sprintf_append(pcWriteBuffer, "\r\n  PowerOff-Alarm-Time: %02d:%02d\r\n", alarm_hour_off, alarm_min_off);
+	sprintf_append(pcWriteBuffer, "\r\n Interval-Alarm: %s ", state_en_dis[alarmInterval]);
+	sprintf_append(pcWriteBuffer, "\r\n  Interval-Alarm-OnTime: %d minutes\r", alarmIntervalMinOn);
+	sprintf_append(pcWriteBuffer, "\r\n  Interval-Alarm-OffTime: %d minutes\r\n", alarmIntervalMinOff);
 
 	/* There is no more data to return after this single string, so return
 	 pdFALSE. */
