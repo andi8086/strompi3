@@ -77,7 +77,7 @@ uint8_t rx_ready = 0;
 uint8_t console_start = 0;
 uint8_t command_always_print = 0;
 
-char firmwareVersion[9] = "v1.72c";
+char firmwareVersion[9] = "v1.72d";
 
 /* FreeRTOS+IO includes. */
 
